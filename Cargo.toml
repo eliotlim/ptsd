@@ -22,6 +22,7 @@ eframe = { version = "0.18.0", features = ["persistence"] }
 serde = { version = "1", features = ["derive"] } # You only need this if you want app persistence
 rfd = "0.9.1"
 async-std = "1.12.0"
+wasm-bindgen-futures = "0.4.31"
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
