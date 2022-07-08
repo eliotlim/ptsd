@@ -47,11 +47,40 @@ impl Default for TemplateApp {
         let (pickFileSender, pickFileReceiver) = std::sync::mpsc::channel();
         let (dataFileSender, dataFileReceiver) = std::sync::mpsc::channel();
 
-        thread::spawn(move || {
-            block_on(async move {
+        if false {
+            println!("using thread::spawn");
+            thread::spawn(move || {
+                block_on(async move {
+                    loop {
+                        match pickFileReceiver.recv() {
+                            Ok(_) => {
+                                let file = AsyncFileDialog::new()
+                                    .add_filter("text", &["txt"])
+                                    .set_directory(".")
+                                    .pick_file()
+                                    .await;
+                                match &file {
+                                    Some(file) => {
+                                        println!("selected file: {:?}", file.file_name());
+                                        let data = file.read().await;
+                                        println!("data: {:?}", data);
+                                        dataFileSender.send(file.file_name().to_string()).expect("TODO: panic message");
+                                    }
+                                    None => {}
+                                };
+                            }
+                            Err(_) => {}
+                        }
+                    }
+                });
+            });
+        } else {
+            println!("using wasm_bindgen_futures");
+            wasm_bindgen_futures::spawn_local(async move {
                 loop {
-                    match pickFileReceiver.recv() {
-                        Ok(_) => {
+                    match pickFileReceiver.try_iter().next() {
+                        Some(_) => {
+                            println!("opening a file");
                             let file = AsyncFileDialog::new()
                                 .add_filter("text", &["txt"])
                                 .set_directory(".")
@@ -62,16 +91,16 @@ impl Default for TemplateApp {
                                     println!("selected file: {:?}", file.file_name());
                                     let data = file.read().await;
                                     println!("data: {:?}", data);
-                                    dataFileSender.send(file.file_name().to_string()).expect("TODO: panic message");
+                                    // dataFileSender.send(file.file_name().to_string()).expect("TODO: panic message");
                                 }
                                 None => {}
                             };
                         }
-                        Err(_) => {}
+                        None => {}
                     }
                 }
             });
-        });
+        }
 
         Self {
             // Example stuff:
